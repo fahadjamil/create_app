@@ -1,25 +1,85 @@
-import logo from './logo.svg';
-import './App.css';
+import * as React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import Auth from "../src/components/auth/auth";
+import Dashboard from "../src/components/Dashboard/dashboard";
+import Layout from "./components/shared/layout";
+import NewProject from "./components/project/newProject";
+import EditProject from "./components/project/editProject";
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(
+    !!localStorage.getItem("token") // initialize directly
+  );
 
-function App() {
+  // Optional: keep state in sync if localStorage changes in another tab
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      setIsAuthenticated(!!localStorage.getItem("token"));
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Routes>
+      {/* Default redirect */}
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      {/* Auth (NO navbar / bottomnav) */}
+      <Route
+        path="/login"
+        element={<Auth onLoginSuccess={() => setIsAuthenticated(true)} />}
+      />
+      {/* Protected Routes inside Layout */}
+      <Route
+        path="/dashboard"
+        element={
+          isAuthenticated ? (
+            <Layout onLogout={handleLogout}>
+              <Dashboard />
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      {/* New Project Route */}
+      <Route
+        path="/projects/new"
+        element={
+          isAuthenticated ? (
+            <Layout onLogout={handleLogout}>
+              <NewProject />
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/project/:id/edit"
+        element={
+          isAuthenticated ? (
+            <Layout onLogout={handleLogout}>
+              <EditProject />
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />{" "}
+    </Routes>
   );
 }
-
-export default App;

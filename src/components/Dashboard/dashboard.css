@@ -1,0 +1,13 @@
+/* Force carousel arrows to show */
+.custom-carousel .carousel-control-prev,
+.custom-carousel .carousel-control-next {
+  width: 5%;               /* wider clickable area */
+  opacity: 1 !important;   /* always visible */
+}
+
+.custom-carousel .carousel-control-prev-icon,
+.custom-carousel .carousel-control-next-icon {
+  background-color: black; /* dark background */
+  border-radius: 50%;      /* circle buttons */
+  padding: 15px;           /* bigger size */
+}
