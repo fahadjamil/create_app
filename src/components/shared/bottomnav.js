@@ -58,7 +58,7 @@ const BottomNav = () => {
           />
           <BottomNavigationAction
             label="Projects"
-            value="/projects"
+            value="/projectsList"
             icon={<DescriptionIcon sx={{ color: getIconColor("/projects") }} />}
           />
           <BottomNavigationAction

@@ -5,6 +5,8 @@ import Dashboard from "../src/components/Dashboard/dashboard";
 import Layout from "./components/shared/layout";
 import NewProject from "./components/project/newProject";
 import EditProject from "./components/project/editProject";
+import ProjectList from "./components/project/projectList";
+import DraftProject from "./components/project/draftProjectForm";
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(
     !!localStorage.getItem("token") // initialize directly
@@ -69,6 +71,18 @@ export default function App() {
         }
       />
       <Route
+        path="/projectsList"
+        element={
+          isAuthenticated ? (
+            <Layout onLogout={handleLogout}>
+              <ProjectList />
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
         path="/project/:id/edit"
         element={
           isAuthenticated ? (
@@ -79,7 +93,19 @@ export default function App() {
             <Navigate to="/login" replace />
           )
         }
-      />{" "}
+      />
+       <Route
+        path="/draftProject/:id/edit"
+        element={
+          isAuthenticated ? (
+            <Layout onLogout={handleLogout}>
+              <DraftProject />
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
     </Routes>
   );
 }

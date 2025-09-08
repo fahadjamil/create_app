@@ -16,7 +16,7 @@ export default function Dashboard() {
         const user = JSON.parse(localStorage.getItem("user"));
 
         const response = await axios.post(
-          "http://localhost:8080/project/all_projects",
+          "https://create-backend-two.vercel.app/project/all_projects",
           { userId: user?.uid } // ✅ make sure only the ID is sent
         );
 

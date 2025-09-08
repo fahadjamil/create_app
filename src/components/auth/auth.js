@@ -43,7 +43,7 @@ const Auth = ({ onLoginSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:8080/user/signin", {
+      const res = await axios.post("https://create-backend-two.vercel.app/user/signin", {
         email: usernameOrEmail,
         password: password,
       });
@@ -73,7 +73,7 @@ const Auth = ({ onLoginSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:8080/user/signup", {
+      const res = await axios.post("https://create-backend-two.vercel.app/user/signup", {
         fullName,
         email: usernameOrEmail,
         password,

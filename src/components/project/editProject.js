@@ -57,7 +57,7 @@ export default function EditProject() {
     const fetchProject = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`http://localhost:8080/project/${id}`);
+        const res = await axios.get(`https://create-backend-two.vercel.app/project/${id}`);
         if (res.data?.data) {
           setProject(res.data.data);
         } else {
@@ -100,7 +100,7 @@ export default function EditProject() {
     try {
       setSaving(true);
       const res = await axios.put(
-        `http://localhost:8080/project/update_project/${id}`,
+        `https://create-backend-two.vercel.app/project/update_project/${id}`,
         project
       );
       if (res.data.success) {
@@ -371,7 +371,7 @@ export default function EditProject() {
                   >
                     <Card.Img
                       variant="top"
-                      src={`http://localhost:8080${img}`}
+                      src={img}
                       alt={`media-${idx}`}
                       style={{ height: "200px", objectFit: "cover" }}
                     />
@@ -395,7 +395,7 @@ export default function EditProject() {
         <Modal.Body className="p-0">
           {selectedImage && (
             <img
-              src={`http://localhost:8080${selectedImage}`}
+              src={selectedImage}
               alt="Expanded view"
               className="w-100"
               style={{ maxHeight: "80vh", objectFit: "contain" }}

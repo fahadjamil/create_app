@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import moment from "moment";
 
 import {
   Container,
@@ -42,16 +43,19 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import PaymentIcon from "@mui/icons-material/Payment";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DocumentScannerIcon from "@mui/icons-material/DocumentScanner";
+import { useParams } from "react-router-dom";
 
-const MultiStepProjectForm = () => {
+const MultiStepDraftProjectForm = () => {
   const today = new Date().toISOString().split("T")[0];
   const [errors, setErrors] = useState({});
+  const { id } = useParams(); // get dpid from route
+  const [draft, setDraft] = useState(null);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     projectName: "",
     projectType: "",
     client: "",
-    startDate: today,
+    startDate: "", // keep empty, will fill from API
     endDate: "",
     description: "",
     tags: [],
@@ -67,15 +71,22 @@ const MultiStepProjectForm = () => {
     projectAmount: "",
     currency: "",
     taxHandling: "",
-    paymentFrequency: "", // weekly / monthly / quarterly
-    paymentstartDate: "", // start date for recurring payments
-    contractDuration: "", // number of months
+    paymentFrequency: "",
+    paymentStartDate: "", // ✅ fix naming
+    contractDuration: "",
     financing: "",
     paymentMethod: "",
-    paymentStructure: "", // single / recurring / multiple ✅
-    milestones: [], // array of { name, percent, deliverable }
+    paymentStructure: "",
+    milestones: [],
     agree: false,
+    projectStatus: "", // ✅ add this
+    contactName: "",
+    contactEmail: "",
+    contactNumber: "",
+    contactRole: "",
+    contactBrand: "",
   });
+
   const [activeStep, setActiveStep] = useState(0);
 
   const [showTagModal, setShowTagModal] = useState(false);
@@ -218,6 +229,50 @@ const MultiStepProjectForm = () => {
       alert("Failed to upload picture. Please try again.");
     }
   };
+  useEffect(() => {
+    if (id) {
+      const fetchDraft = async () => {
+        try {
+          const res = await axios.get(
+            `https://create-backend-two.vercel.app/project/draft/${id}`,
+            {
+              params: { userId: JSON.parse(localStorage.getItem("user"))?.uid },
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+
+          if (res.data?.data) {
+            const draftData = res.data.data;
+
+            setFormData((prev) => ({
+              ...prev,
+              ...draftData,
+              startDate: draftData.startDate
+                ? moment(draftData.startDate).format("DD/MM/YYYY")
+                : "",
+              endDate: draftData.endDate
+                ? moment(draftData.endDate).format("DD/MM/YYYY")
+                : "",
+              paymentStartDate: draftData.paymentStartDate
+                ? moment(draftData.paymentStartDate).format("DD/MM/YYYY")
+                : "",
+              media: Array.isArray(draftData.media)
+                ? draftData.media
+                    .map((m) => (typeof m === "string" ? m : m?.url || ""))
+                    .filter(Boolean)
+                : [],
+            }));
+          }
+        } catch (error) {
+          console.error("❌ Error fetching draft:", error);
+        }
+      };
+      fetchDraft();
+    }
+  }, [id]);
+
   useEffect(() => {
     if (typeof formData.media === "string") {
       try {
@@ -457,68 +512,110 @@ const MultiStepProjectForm = () => {
                     disabled={formData.media.length === 0}
                   >
                     Upload
-                  </Button>{" "}
+                  </Button>
                 </>
               )}
 
               {/* Preview Images */}
               <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 2 }}>
-                {formData.media.map((file, idx) => {
-                  // If backend already returned URL string
-                  const previewUrl =
-                    typeof file === "string"
-                      ? file // ✅ Use Cloudinary URL directly
-                      : URL.createObjectURL(file);
-                  const fileName =
-                    typeof file === "string"
-                      ? file.split("/").pop()
-                      : file.name;
+                {formData.media
+                  .filter(Boolean) // remove null/undefined
+                  .map((file, idx) => {
+                    if (typeof file !== "string" && !(file instanceof File))
+                      return null;
 
-                  return (
-                    <Box
-                      key={idx}
-                      sx={{
-                        position: "relative",
-                        width: 100,
-                        height: 100,
-                        borderRadius: 2,
-                        overflow: "hidden",
-                        boxShadow: 1,
-                      }}
-                    >
-                      <img
-                        src={previewUrl}
-                        alt={fileName}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                      <Button
-                        size="small"
-                        color="error"
+                    const previewUrl =
+                      typeof file === "string"
+                        ? file
+                        : URL.createObjectURL(file);
+
+                    const fileName =
+                      typeof file === "string"
+                        ? file.split("/").pop()
+                        : file.name;
+
+                    return (
+                      <Box
+                        key={idx}
                         sx={{
-                          position: "absolute",
-                          top: 2,
-                          right: 2,
-                          minWidth: "24px",
-                          height: "24px",
-                          fontSize: "12px",
-                          padding: 0,
-                          borderRadius: "50%",
-                        }}
-                        onClick={() => {
-                          const updated = [...formData.media];
-                          updated.splice(idx, 1);
-                          setFormData({ ...formData, media: updated });
+                          position: "relative",
+                          width: 80,
+                          height: 80,
+                          borderRadius: 2,
+                          overflow: "hidden",
+                          boxShadow: 1,
+                          border: "1px solid #ddd",
                         }}
                       >
-                        ✕
-                      </Button>
-                    </Box>
-                  );
-                })}
+                        <img
+                          src={previewUrl}
+                          alt={fileName}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+
+                        {/* Delete Button */}
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="error"
+                          sx={{
+                            position: "absolute",
+                            top: 2,
+                            right: 2,
+                            minWidth: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            p: 0,
+                            fontSize: "12px",
+                          }}
+                          onClick={() => {
+                            const updated = [...formData.media];
+                            updated.splice(idx, 1);
+                            setFormData({ ...formData, media: updated });
+                          }}
+                        >
+                          ✕
+                        </Button>
+
+                        {/* Update/Replace Button */}
+                        <Button
+                          component="label"
+                          size="small"
+                          variant="contained"
+                          sx={{
+                            position: "absolute",
+                            bottom: 2,
+                            right: 2,
+                            minWidth: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            p: 0,
+                            fontSize: "12px",
+                            backgroundColor: "#1976d2",
+                          }}
+                        >
+                          ⟳
+                          <input
+                            type="file"
+                            hidden
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                const updated = [...formData.media];
+                                updated[idx] = e.target.files[0];
+                                setFormData({ ...formData, media: updated });
+                              }
+                            }}
+                          />
+                        </Button>
+                      </Box>
+                    );
+                  })}
               </Box>
             </Col>
 
@@ -535,6 +632,7 @@ const MultiStepProjectForm = () => {
                 value={formData.contactName}
                 onChange={handleChange}
                 fullWidth
+                InputLabelProps={{ shrink: true }} // ✅ Fix overlap
               />
             </Col>
             <Col md={6}>
@@ -544,6 +642,7 @@ const MultiStepProjectForm = () => {
                 value={formData.contactRole}
                 onChange={handleChange}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
               />
             </Col>
             <Col md={6}>
@@ -553,6 +652,7 @@ const MultiStepProjectForm = () => {
                 value={formData.contactBrand}
                 onChange={handleChange}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
               />
             </Col>
             <Col md={6}>
@@ -562,6 +662,7 @@ const MultiStepProjectForm = () => {
                 value={formData.contactEmail}
                 onChange={handleChange}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
               />
             </Col>
             <Col md={6}>
@@ -571,6 +672,7 @@ const MultiStepProjectForm = () => {
                 value={formData.contactNumber}
                 onChange={handleChange}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
               />
             </Col>
           </Row>
@@ -1437,4 +1539,4 @@ const MultiStepProjectForm = () => {
   );
 };
 
-export default MultiStepProjectForm;
+export default MultiStepDraftProjectForm;
