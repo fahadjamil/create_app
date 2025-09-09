@@ -51,6 +51,7 @@ const MultiStepDraftProjectForm = () => {
   const { id } = useParams(); // get dpid from route
   const [draft, setDraft] = useState(null);
   const navigate = useNavigate();
+  const baseURL = process.env.REACT_APP_BASE_URL;
   const [formData, setFormData] = useState({
     projectName: "",
     projectType: "",
@@ -200,7 +201,7 @@ const MultiStepDraftProjectForm = () => {
 
   const uploadPictures = async () => {
     try {
-      const endpoint = "https://create-backend-two.vercel.app/project/upload_pictures";
+      const endpoint = `${baseURL}/project/upload_pictures`;
 
       // Create a FormData object
       const formDataToSend = new FormData();
@@ -234,7 +235,7 @@ const MultiStepDraftProjectForm = () => {
       const fetchDraft = async () => {
         try {
           const res = await axios.get(
-            `https://create-backend-two.vercel.app/project/draft/${id}`,
+            `${baseURL}/project/draft/${id}`,
             {
               params: { userId: JSON.parse(localStorage.getItem("user"))?.uid },
               headers: {
@@ -301,7 +302,7 @@ const MultiStepDraftProjectForm = () => {
     };
     try {
       const response = await axios.post(
-        "https://create-backend-two.vercel.app/project/draftProject",
+        `${baseURL}/project/draftProject`,
         finalData // send finalData with userId
       );
       console.log("Project Drafted:", response.data.project);
@@ -331,7 +332,7 @@ const MultiStepDraftProjectForm = () => {
 
     try {
       const response = await axios.post(
-        "https://create-backend-two.vercel.app/project/new_project",
+        `${baseURL}/project/new_project`,
         finalData // send finalData with userId
       );
       console.log("Project created:", response.data.project);

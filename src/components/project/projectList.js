@@ -109,6 +109,7 @@ const ProjectList = () => {
   const [projectPage, setProjectPage] = useState(1);
   const [draftPage, setDraftPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const baseURL = process.env.REACT_APP_BASE_URL;
 
   // Fetch data
   useEffect(() => {
@@ -126,8 +127,8 @@ const ProjectList = () => {
         const payload = { userId: user?.uid };
 
         const [projectsRes, draftsRes] = await Promise.all([
-          axios.post("https://create-backend-two.vercel.app/project/all_projects", payload),
-          axios.post("https://create-backend-two.vercel.app/project/all_draftProject", payload),
+          axios.post(`${baseURL}/project/all_projects`, payload),
+          axios.post(`${baseURL}/project/all_draftProject`, payload),
         ]);
 
         const normalizeProject = (p, isDraft = false) => ({

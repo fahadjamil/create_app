@@ -21,6 +21,7 @@ export default function EditProject() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const baseURL = process.env.REACT_APP_BASE_URL;
 
   const [project, setProject] = useState({
     projectName: "",
@@ -57,7 +58,7 @@ export default function EditProject() {
     const fetchProject = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`https://create-backend-two.vercel.app/project/${id}`);
+        const res = await axios.get(`${baseURL}/project/${id}`);
         if (res.data?.data) {
           setProject(res.data.data);
         } else {
@@ -100,7 +101,7 @@ export default function EditProject() {
     try {
       setSaving(true);
       const res = await axios.put(
-        `https://create-backend-two.vercel.app/project/update_project/${id}`,
+        `${baseURL}/project/update_project/${id}`,
         project
       );
       if (res.data.success) {

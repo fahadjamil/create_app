@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null); // optional filter by status
   const navigate = useNavigate();
+  const baseURL = process.env.REACT_APP_BASE_URL;
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -16,7 +17,7 @@ export default function Dashboard() {
         const user = JSON.parse(localStorage.getItem("user"));
 
         const response = await axios.post(
-          "https://create-backend-two.vercel.app/project/all_projects",
+          `${baseURL}/project/all_projects`,
           { userId: user?.uid } // ✅ make sure only the ID is sent
         );
 

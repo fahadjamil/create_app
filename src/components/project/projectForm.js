@@ -47,6 +47,7 @@ const MultiStepProjectForm = () => {
   const today = new Date().toISOString().split("T")[0];
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const baseURL = process.env.REACT_APP_BASE_URL;
   const [formData, setFormData] = useState({
     projectName: "",
     projectType: "",
@@ -189,7 +190,7 @@ const MultiStepProjectForm = () => {
 
   const uploadPictures = async () => {
     try {
-      const endpoint = "https://create-backend-two.vercel.app/project/upload_pictures";
+      const endpoint = `${baseURL}/project/upload_pictures`;
 
       // Create a FormData object
       const formDataToSend = new FormData();
@@ -246,7 +247,7 @@ const MultiStepProjectForm = () => {
     };
     try {
       const response = await axios.post(
-        "https://create-backend-two.vercel.app/project/draftProject",
+        `${baseURL}/project/draftProject`,
         finalData // send finalData with userId
       );
       console.log("Project Drafted:", response.data.project);
@@ -276,7 +277,7 @@ const MultiStepProjectForm = () => {
 
     try {
       const response = await axios.post(
-        "https://create-backend-two.vercel.app/project/new_project",
+        `${baseURL}/project/new_project`,
         finalData // send finalData with userId
       );
       console.log("Project created:", response.data.project);
