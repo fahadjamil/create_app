@@ -25,6 +25,7 @@ export default function EditProject() {
 
   const [project, setProject] = useState({
     projectName: "",
+    clientName:"",
     client: "",
     projectType: "",
     projectStatus: "Pending",
@@ -168,11 +169,22 @@ export default function EditProject() {
 
           {/* Project Info */}
           <Row>
-            <Col md={12} className="mb-3">
+            <Col md={6} className="mb-3">
               <TextField
                 label="Project Name"
                 name="projectName"
                 value={project.projectName || ""}
+                onChange={handleChange}
+                fullWidth
+                required
+                disabled={!editMode}
+              />
+            </Col>
+            <Col md={6} className="mb-3">
+              <TextField
+                label="Client Name"
+                name="clientName"
+                value={project.clientName || ""}
                 onChange={handleChange}
                 fullWidth
                 required

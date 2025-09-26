@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import moment from "moment";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import {
   Container,
@@ -55,6 +58,7 @@ const MultiStepDraftProjectForm = () => {
   const [formData, setFormData] = useState({
     projectName: "",
     projectType: "",
+    clientName: "",
     client: "",
     startDate: "", // keep empty, will fill from API
     endDate: "",
@@ -143,6 +147,8 @@ const MultiStepDraftProjectForm = () => {
         newErrors.projectName = "Project Name is required";
       if (!(formData.projectType || "").trim())
         newErrors.projectType = "Project Type is required";
+      if (!(formData.clientName || "").trim())
+        newErrors.clientName = "Client Name is required"; // ✅ added
       if (!(formData.client || "").trim())
         newErrors.client = "Client is required";
       if (!(formData.projectStatus || "").trim())
@@ -150,7 +156,6 @@ const MultiStepDraftProjectForm = () => {
       if (!formData.startDate) newErrors.startDate = "Start Date is required";
       if (!formData.endDate) newErrors.endDate = "End Date is required";
     }
-
     if (step === 1) {
       if (!(formData.paymentStructure || "").trim())
         newErrors.paymentStructure = "Payment Type is required";
@@ -234,15 +239,12 @@ const MultiStepDraftProjectForm = () => {
     if (id) {
       const fetchDraft = async () => {
         try {
-          const res = await axios.get(
-            `${baseURL}/project/draft/${id}`,
-            {
-              params: { userId: JSON.parse(localStorage.getItem("user"))?.uid },
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-            }
-          );
+          const res = await axios.get(`${baseURL}/project/draft/${id}`, {
+            params: { userId: JSON.parse(localStorage.getItem("user"))?.uid },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
 
           if (res.data?.data) {
             const draftData = res.data.data;
@@ -402,6 +404,16 @@ const MultiStepDraftProjectForm = () => {
             </Col>
             <Col md={6}>
               <TextField
+                label="Client Name"
+                name="clientName"
+                error={!!errors.clientName}
+                value={formData.clientName}
+                onChange={handleChange}
+                fullWidth
+              ></TextField>
+            </Col>
+            <Col md={6}>
+              <TextField
                 label="Client"
                 name="client"
                 error={!!errors.client}
@@ -463,17 +475,6 @@ const MultiStepDraftProjectForm = () => {
               />
             </Col>
             <Col md={6}>
-              <TextField
-                label="Project Description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                multiline
-                rows={4}
-                fullWidth
-              />
-            </Col>
-            <Col md={6}>
               <div className="d-flex flex-wrap gap-2">
                 {formData.tags.map((tag, idx) => (
                   <span
@@ -491,6 +492,18 @@ const MultiStepDraftProjectForm = () => {
                 </Button>
               </div>
             </Col>
+            <Col md={6}>
+              <TextField
+                label="Project Description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                multiline
+                rows={4}
+                fullWidth
+              />
+            </Col>
+
             <Col md={6}>
               {/* Upload Button */}
               {!formData.pid && (
@@ -513,110 +526,68 @@ const MultiStepDraftProjectForm = () => {
                     disabled={formData.media.length === 0}
                   >
                     Upload
-                  </Button>
+                  </Button>{" "}
                 </>
               )}
 
               {/* Preview Images */}
               <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 2 }}>
-                {formData.media
-                  .filter(Boolean) // remove null/undefined
-                  .map((file, idx) => {
-                    if (typeof file !== "string" && !(file instanceof File))
-                      return null;
+                {formData.media.map((file, idx) => {
+                  // If backend already returned URL string
+                  const previewUrl =
+                    typeof file === "string"
+                      ? file // ✅ Use Cloudinary URL directly
+                      : URL.createObjectURL(file);
+                  const fileName =
+                    typeof file === "string"
+                      ? file.split("/").pop()
+                      : file.name;
 
-                    const previewUrl =
-                      typeof file === "string"
-                        ? file
-                        : URL.createObjectURL(file);
-
-                    const fileName =
-                      typeof file === "string"
-                        ? file.split("/").pop()
-                        : file.name;
-
-                    return (
-                      <Box
-                        key={idx}
+                  return (
+                    <Box
+                      key={idx}
+                      sx={{
+                        position: "relative",
+                        width: 100,
+                        height: 100,
+                        borderRadius: 2,
+                        overflow: "hidden",
+                        boxShadow: 1,
+                      }}
+                    >
+                      <img
+                        src={previewUrl}
+                        alt={fileName}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <Button
+                        size="small"
+                        color="error"
                         sx={{
-                          position: "relative",
-                          width: 80,
-                          height: 80,
-                          borderRadius: 2,
-                          overflow: "hidden",
-                          boxShadow: 1,
-                          border: "1px solid #ddd",
+                          position: "absolute",
+                          top: 2,
+                          right: 2,
+                          minWidth: "24px",
+                          height: "24px",
+                          fontSize: "12px",
+                          padding: 0,
+                          borderRadius: "50%",
+                        }}
+                        onClick={() => {
+                          const updated = [...formData.media];
+                          updated.splice(idx, 1);
+                          setFormData({ ...formData, media: updated });
                         }}
                       >
-                        <img
-                          src={previewUrl}
-                          alt={fileName}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-
-                        {/* Delete Button */}
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="error"
-                          sx={{
-                            position: "absolute",
-                            top: 2,
-                            right: 2,
-                            minWidth: "24px",
-                            height: "24px",
-                            borderRadius: "50%",
-                            p: 0,
-                            fontSize: "12px",
-                          }}
-                          onClick={() => {
-                            const updated = [...formData.media];
-                            updated.splice(idx, 1);
-                            setFormData({ ...formData, media: updated });
-                          }}
-                        >
-                          ✕
-                        </Button>
-
-                        {/* Update/Replace Button */}
-                        <Button
-                          component="label"
-                          size="small"
-                          variant="contained"
-                          sx={{
-                            position: "absolute",
-                            bottom: 2,
-                            right: 2,
-                            minWidth: "24px",
-                            height: "24px",
-                            borderRadius: "50%",
-                            p: 0,
-                            fontSize: "12px",
-                            backgroundColor: "#1976d2",
-                          }}
-                        >
-                          ⟳
-                          <input
-                            type="file"
-                            hidden
-                            accept="image/*"
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                const updated = [...formData.media];
-                                updated[idx] = e.target.files[0];
-                                setFormData({ ...formData, media: updated });
-                              }
-                            }}
-                          />
-                        </Button>
-                      </Box>
-                    );
-                  })}
+                        ✕
+                      </Button>
+                    </Box>
+                  );
+                })}
               </Box>
             </Col>
 
@@ -633,7 +604,6 @@ const MultiStepDraftProjectForm = () => {
                 value={formData.contactName}
                 onChange={handleChange}
                 fullWidth
-                InputLabelProps={{ shrink: true }} // ✅ Fix overlap
               />
             </Col>
             <Col md={6}>
@@ -643,7 +613,6 @@ const MultiStepDraftProjectForm = () => {
                 value={formData.contactRole}
                 onChange={handleChange}
                 fullWidth
-                InputLabelProps={{ shrink: true }}
               />
             </Col>
             <Col md={6}>
@@ -653,7 +622,6 @@ const MultiStepDraftProjectForm = () => {
                 value={formData.contactBrand}
                 onChange={handleChange}
                 fullWidth
-                InputLabelProps={{ shrink: true }}
               />
             </Col>
             <Col md={6}>
@@ -663,7 +631,6 @@ const MultiStepDraftProjectForm = () => {
                 value={formData.contactEmail}
                 onChange={handleChange}
                 fullWidth
-                InputLabelProps={{ shrink: true }}
               />
             </Col>
             <Col md={6}>
@@ -673,12 +640,10 @@ const MultiStepDraftProjectForm = () => {
                 value={formData.contactNumber}
                 onChange={handleChange}
                 fullWidth
-                InputLabelProps={{ shrink: true }}
               />
             </Col>
           </Row>
         );
-
       case 1:
         return (
           <Row className="g-3">
@@ -1477,21 +1442,63 @@ const MultiStepDraftProjectForm = () => {
       <MuiCard className="p-4 mb-4 shadow-sm">
         {renderStepForm()}
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-          <Button disabled={activeStep === 0} onClick={handleBack}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 4,
+            p: 2,
+            bgcolor: "#f9f9f9",
+            borderRadius: 3,
+            boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
+          }}
+        >
+          {/* Back Button */}
+          <Button
+            startIcon={<ArrowBackIcon />}
+            disabled={activeStep === 0}
+            onClick={handleBack}
+            variant="outlined"
+            sx={{
+              borderRadius: "30px",
+              px: 3,
+            }}
+          >
             Back
           </Button>
+
+          {/* Draft Button */}
           <Button
             variant="contained"
+            color="warning"
             onClick={handleDraft}
-            // disabled={!isStepValid()}
+            sx={{
+              borderRadius: "30px",
+              px: 3,
+              fontWeight: "bold",
+            }}
           >
-            {"Draft"}
+            Save as Draft
           </Button>
+
+          {/* Next / Submit Button */}
           <Button
             variant="contained"
+            color={activeStep === steps.length - 1 ? "success" : "primary"}
+            endIcon={
+              activeStep === steps.length - 1 ? (
+                <CheckCircleIcon />
+              ) : (
+                <ArrowForwardIcon />
+              )
+            }
             onClick={handleNext}
-            // disabled={!isStepValid()}
+            sx={{
+              borderRadius: "30px",
+              px: 3,
+              fontWeight: "bold",
+            }}
           >
             {activeStep === steps.length - 1 ? "Submit" : "Next"}
           </Button>

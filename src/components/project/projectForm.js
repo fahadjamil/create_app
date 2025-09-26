@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import {
   Container,
@@ -51,6 +54,7 @@ const MultiStepProjectForm = () => {
   const [formData, setFormData] = useState({
     projectName: "",
     projectType: "",
+    clientName: "",
     client: "",
     startDate: today,
     endDate: "",
@@ -132,6 +136,8 @@ const MultiStepProjectForm = () => {
         newErrors.projectName = "Project Name is required";
       if (!(formData.projectType || "").trim())
         newErrors.projectType = "Project Type is required";
+      if (!(formData.clientName || "").trim())
+        newErrors.clientName = "Client Name is required"; // ✅ added
       if (!(formData.client || "").trim())
         newErrors.client = "Client is required";
       if (!(formData.projectStatus || "").trim())
@@ -347,6 +353,16 @@ const MultiStepProjectForm = () => {
             </Col>
             <Col md={6}>
               <TextField
+                label="Client Name"
+                name="clientName"
+                error={!!errors.clientName}
+                value={formData.clientName}
+                onChange={handleChange}
+                fullWidth
+              ></TextField>
+            </Col>
+            <Col md={6}>
+              <TextField
                 label="Client"
                 name="client"
                 error={!!errors.client}
@@ -408,17 +424,6 @@ const MultiStepProjectForm = () => {
               />
             </Col>
             <Col md={6}>
-              <TextField
-                label="Project Description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                multiline
-                rows={4}
-                fullWidth
-              />
-            </Col>
-            <Col md={6}>
               <div className="d-flex flex-wrap gap-2">
                 {formData.tags.map((tag, idx) => (
                   <span
@@ -436,6 +441,18 @@ const MultiStepProjectForm = () => {
                 </Button>
               </div>
             </Col>
+            <Col md={6}>
+              <TextField
+                label="Project Description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                multiline
+                rows={4}
+                fullWidth
+              />
+            </Col>
+
             <Col md={6}>
               {/* Upload Button */}
               {!formData.pid && (
@@ -1375,21 +1392,63 @@ const MultiStepProjectForm = () => {
       <MuiCard className="p-4 mb-4 shadow-sm">
         {renderStepForm()}
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-          <Button disabled={activeStep === 0} onClick={handleBack}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 4,
+            p: 2,
+            bgcolor: "#f9f9f9",
+            borderRadius: 3,
+            boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
+          }}
+        >
+          {/* Back Button */}
+          <Button
+            startIcon={<ArrowBackIcon />}
+            disabled={activeStep === 0}
+            onClick={handleBack}
+            variant="outlined"
+            sx={{
+              borderRadius: "30px",
+              px: 3,
+            }}
+          >
             Back
           </Button>
+
+          {/* Draft Button */}
           <Button
             variant="contained"
+            color="warning"
             onClick={handleDraft}
-            // disabled={!isStepValid()}
+            sx={{
+              borderRadius: "30px",
+              px: 3,
+              fontWeight: "bold",
+            }}
           >
-            {"Draft"}
+            Save as Draft
           </Button>
+
+          {/* Next / Submit Button */}
           <Button
             variant="contained"
+            color={activeStep === steps.length - 1 ? "success" : "primary"}
+            endIcon={
+              activeStep === steps.length - 1 ? (
+                <CheckCircleIcon />
+              ) : (
+                <ArrowForwardIcon />
+              )
+            }
             onClick={handleNext}
-            // disabled={!isStepValid()}
+            sx={{
+              borderRadius: "30px",
+              px: 3,
+              fontWeight: "bold",
+            }}
           >
             {activeStep === steps.length - 1 ? "Submit" : "Next"}
           </Button>
