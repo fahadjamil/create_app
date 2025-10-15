@@ -154,15 +154,70 @@ export default function CreateInvoice() {
 
     fetchProjects();
   }, [status]);
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    let newErrors = {};
+
+    if (!form.clientName?.trim()) {
+      newErrors.clientName = "Client name is required";
+    }
+
+    if (!form.clientType) {
+      newErrors.clientType = "Please select client type";
+    }
+
+    if (!form.clientEmail) {
+      newErrors.clientEmail = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(form.clientEmail)) {
+      newErrors.clientEmail = "Enter a valid email address";
+    }
+
+    if (!form.phone) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\d{10,15}$/.test(form.phone)) {
+      newErrors.phone = "Enter a valid phone number (10-15 digits)";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleDownloadPDF = async () => {
-    const element = printRef.current;
-    if (!element) {
-      alert("⚠️ Nothing to export!");
+  if (clientType === "custom") {
+    // 1. Validate form first
+    if (!validateForm()) {
+      alert("⚠️ Please fix validation errors before proceeding.");
       return;
     }
 
+    // 2. Prepare dataset
+    const dataset = {
+      fullName: form.clientName.trim(),
+      clientType: form.clientType,
+      company: form.company?.trim() || "",
+      email: form.clientEmail.trim(),
+      phone: form.phone.trim(),
+      address: form.address?.trim() || "",
+    };
+
     try {
+      setLoading(true);
+      // 3. Call API
+      const res = await axios.post(
+        "http://localhost:8080/api/clients",
+        dataset
+      );
+
+      console.log("✅ Client created:", res.data);
+
+      // 4. Proceed with PDF generation only after success
+      const element = printRef.current;
+      if (!element) {
+        alert("⚠️ Nothing to export!");
+        return;
+      }
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -188,11 +243,20 @@ export default function CreateInvoice() {
 
       pdf.save("invoice.pdf");
       alert("✅ Invoice PDF downloaded!");
-    } catch (error) {
-      console.error("PDF generation failed:", error);
-      alert("❌ Failed to generate PDF.");
+    } catch (err) {
+      if (err.response) {
+        console.error("❌ API Error:", err.response.data.message);
+        alert(err.response.data.message); // e.g. duplicate phone/email
+      } else {
+        console.error("❌ Network Error:", err.message);
+        alert("Network error, please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+};
+
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -262,42 +326,91 @@ export default function CreateInvoice() {
 
                 {clientType === "custom" && (
                   <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid item xs={6}>
+                    {/* Client Name */}
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
+                        required
                         label="Client Name"
                         name="clientName"
                         value={form.clientName}
                         onChange={handleChange}
+                        error={!!errors.clientName}
+                        helperText={errors.clientName}
                       />
                     </Grid>
-                    <Grid item xs={6}>
+
+                    {/* Client Type */}
+                    <Grid item xs={12} sm={6}>
+                      <FormControl
+                        fullWidth
+                        required
+                        error={!!errors.clientType}
+                      >
+                        <InputLabel id="client-type-label">
+                          Client Type *
+                        </InputLabel>
+                        <Select
+                          labelId="client-type-label"
+                          id="client-type"
+                          name="clientType"
+                          value={form.clientType}
+                          onChange={handleChange}
+                        >
+                          <MenuItem value="">Select a client type</MenuItem>
+                          <MenuItem value="individual">Individual</MenuItem>
+                          <MenuItem value="brand">Brand</MenuItem>
+                        </Select>
+                        {errors.clientType && (
+                          <Typography variant="caption" color="error">
+                            {errors.clientType}
+                          </Typography>
+                        )}
+                      </FormControl>
+                    </Grid>
+
+                    {/* Client Email */}
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
+                        required
                         label="Client Email"
                         name="clientEmail"
                         value={form.clientEmail}
                         onChange={handleChange}
+                        error={!!errors.clientEmail}
+                        helperText={errors.clientEmail}
                       />
                     </Grid>
-                    <Grid item xs={6}>
+
+                    {/* Company */}
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
                         label="Company"
                         name="company"
                         value={form.company}
                         onChange={handleChange}
+                        error={!!errors.company}
+                        helperText={errors.company}
                       />
                     </Grid>
-                    <Grid item xs={6}>
+
+                    {/* Phone */}
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
+                        required
                         label="Phone"
                         name="phone"
                         value={form.phone}
                         onChange={handleChange}
+                        error={!!errors.phone}
+                        helperText={errors.phone}
                       />
                     </Grid>
+
+                    {/* Address */}
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
@@ -305,6 +418,8 @@ export default function CreateInvoice() {
                         name="address"
                         value={form.address}
                         onChange={handleChange}
+                        error={!!errors.address}
+                        helperText={errors.address}
                       />
                     </Grid>
                   </Grid>

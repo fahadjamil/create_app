@@ -7,7 +7,9 @@ import NewProject from "./components/project/newProject";
 import EditProject from "./components/project/editProject";
 import ProjectList from "./components/project/projectList";
 import DraftProject from "./components/project/draftProjectForm";
-import NewInvoice from "./components/Invoice/newInvoice"
+import NewInvoice from "./components/Invoice/newInvoice";
+import ClientDetails from "./components/client/clientDetails";
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(
     !!localStorage.getItem("token") // initialize directly
@@ -95,7 +97,7 @@ export default function App() {
           )
         }
       />
-       <Route
+      <Route
         path="/draftProject/:id/edit"
         element={
           isAuthenticated ? (
@@ -107,12 +109,24 @@ export default function App() {
           )
         }
       />
-       <Route
+      <Route
         path="/invoices/new"
         element={
           isAuthenticated ? (
             <Layout onLogout={handleLogout}>
-              <NewInvoice/>
+              <NewInvoice />
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/client/:id"
+        element={
+          isAuthenticated ? (
+            <Layout onLogout={handleLogout}>
+              <ClientDetails />
             </Layout>
           ) : (
             <Navigate to="/login" replace />
