@@ -19,6 +19,7 @@ import {
   Stepper,
   Step,
   StepLabel,
+  InputAdornment,
   TextField,
   MenuItem,
   Avatar,
@@ -281,21 +282,21 @@ const MultiStepProjectForm = () => {
 
     console.log("Submitting Form Data:", finalData);
 
-    try {
-      const response = await axios.post(
-        `${baseURL}/project/new_project`,
-        finalData // send finalData with userId
-      );
-      console.log("Project created:", response.data.project);
-      alert("Project created successfully!");
-      navigate("/dashboard");
-    } catch (err) {
-      console.error(
-        "Error creating project:",
-        err.response?.data || err.message
-      );
-      alert("Failed to create project.");
-    }
+    // try {
+    //   const response = await axios.post(
+    //     `${baseURL}/project/new_project`,
+    //     finalData // send finalData with userId
+    //   );
+    //   console.log("Project created:", response.data.project);
+    //   alert("Project created successfully!");
+    //   navigate("/dashboard");
+    // } catch (err) {
+    //   console.error(
+    //     "Error creating project:",
+    //     err.response?.data || err.message
+    //   );
+    //   alert("Failed to create project.");
+    // }
   };
 
   const handleBack = () => setActiveStep((prev) => prev - 1);
@@ -424,14 +425,34 @@ const MultiStepProjectForm = () => {
               />
             </Col>
             <Col md={6}>
-              <div className="d-flex flex-wrap gap-2">
+              <div className="d-flex flex-wrap gap-2 align-items-center">
                 {formData.tags.map((tag, idx) => (
-                  <span
+                  <div
                     key={idx}
                     className="badge bg-primary d-flex align-items-center"
+                    style={{ gap: "6px", padding: "8px" }}
                   >
-                    {tag}
-                  </span>
+                    <span>{tag}</span>
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => {
+                        const updatedTags = formData.tags.filter(
+                          (_, i) => i !== idx
+                        );
+                        setFormData({ ...formData, tags: updatedTags });
+                      }}
+                      style={{
+                        color: "white",
+                        minWidth: "20px",
+                        padding: "0",
+                        lineHeight: 1,
+                        fontSize: "14px",
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
                 ))}
                 <Button
                   variant="outlined"
@@ -671,33 +692,60 @@ const MultiStepProjectForm = () => {
                 Configure the payment details for your project
               </Typography>
 
-              {/* Total Project Value */}
+              {/* 💰 Total Project Value */}
+              {/* 💰 Total Project Value */}
               <Paper className="p-3 mb-4" elevation={3}>
                 <Typography variant="h6" gutterBottom>
                   Total Project Value
                 </Typography>
                 <Grid container spacing={2}>
+                  {/* Project Amount Field */}
                   <Grid item xs={6}>
                     <TextField
                       fullWidth
-                      value={formData.projectAmount}
-                      error={!!errors.projectAmount}
                       label="Project Amount"
                       variant="outlined"
-                      type="number"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          projectAmount: Number(e.target.value),
-                        })
+                      value={
+                        formData.projectAmount
+                          ? Number(formData.projectAmount).toLocaleString(
+                              "en-US"
+                            )
+                          : ""
                       }
+                      error={!!errors.projectAmount}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            {formData.currency === "USD"
+                              ? "$"
+                              : formData.currency === "EUR"
+                              ? "€"
+                              : "₨"}
+                          </InputAdornment>
+                        ),
+                        inputMode: "numeric",
+                        pattern: "[0-9,]*",
+                      }}
+                      onChange={(e) => {
+                        // Remove commas for parsing
+                        const rawValue = e.target.value.replace(/,/g, "");
+                        // ✅ allow only digits
+                        if (/^\d*$/.test(rawValue)) {
+                          setFormData({
+                            ...formData,
+                            projectAmount: rawValue,
+                          });
+                        }
+                      }}
                     />
                   </Grid>
+
+                  {/* Currency Dropdown */}
                   <Grid item md={6}>
                     <FormControl fullWidth>
                       <InputLabel>Currency</InputLabel>
                       <Select
-                        value={formData.currency || ""} // ✅ fallback to empty if not set
+                        value={formData.currency || ""}
                         label="Currency"
                         error={!!errors.currency}
                         onChange={(e) =>
@@ -714,8 +762,7 @@ const MultiStepProjectForm = () => {
                 </Grid>
               </Paper>
 
-              {/* Tax Handling */}
-              {/* Tax Handling */}
+              {/* 🧾 Tax Handling */}
               <Paper className="p-3 mb-4" elevation={3}>
                 <Typography variant="h6">Tax Handling</Typography>
                 <FormControl component="fieldset">
@@ -748,30 +795,66 @@ const MultiStepProjectForm = () => {
                     formData.taxHandling === "inclusive" ? (
                       <Typography variant="body2" color="text.secondary">
                         Project Amount (Inclusive of GST):{" "}
-                        <b>PKR {formData.projectAmount}</b>
+                        <b>
+                          {formData.currency || "PKR"}{" "}
+                          {Number(formData.projectAmount).toLocaleString(
+                            "en-US"
+                          )}
+                        </b>
                         <br />
                         Base Amount (excl. GST):{" "}
-                        <b>PKR {(formData.projectAmount / 1.18).toFixed(2)}</b>
+                        <b>
+                          {formData.currency || "PKR"}{" "}
+                          {(formData.projectAmount / 1.18).toLocaleString(
+                            "en-US",
+                            {
+                              maximumFractionDigits: 2,
+                            }
+                          )}
+                        </b>
                         <br />
                         GST Portion (18%):{" "}
                         <b>
-                          PKR{" "}
+                          {formData.currency || "PKR"}{" "}
                           {(
                             formData.projectAmount -
                             formData.projectAmount / 1.18
-                          ).toFixed(2)}
+                          ).toLocaleString("en-US", {
+                            maximumFractionDigits: 2,
+                          })}
                         </b>
                       </Typography>
                     ) : (
                       <Typography variant="body2" color="text.secondary">
                         Project Amount (Excl. GST):{" "}
-                        <b>PKR {formData.projectAmount}</b>
+                        <b>
+                          {formData.currency || "PKR"}{" "}
+                          {Number(formData.projectAmount).toLocaleString(
+                            "en-US"
+                          )}
+                        </b>
                         <br />
                         GST (18%):{" "}
-                        <b>PKR {(formData.projectAmount * 0.18).toFixed(2)}</b>
+                        <b>
+                          {formData.currency || "PKR"}{" "}
+                          {(formData.projectAmount * 0.18).toLocaleString(
+                            "en-US",
+                            {
+                              maximumFractionDigits: 2,
+                            }
+                          )}
+                        </b>
                         <br />
                         Total Payable (incl. GST):{" "}
-                        <b>PKR {(formData.projectAmount * 1.18).toFixed(2)}</b>
+                        <b>
+                          {formData.currency || "PKR"}{" "}
+                          {(formData.projectAmount * 1.18).toLocaleString(
+                            "en-US",
+                            {
+                              maximumFractionDigits: 2,
+                            }
+                          )}
+                        </b>
                       </Typography>
                     )
                   ) : (
@@ -782,307 +865,223 @@ const MultiStepProjectForm = () => {
                 </Box>
               </Paper>
 
-              {/* Payment Frequency */}
-              <Paper className="p-3 mb-4" elevation={3}>
-                <Typography variant="h6">Payment Frequency</Typography>
+              {/* 💸 Payment Frequency — shown only for recurring & multiple */}
+              {(formData.paymentStructure === "recurring" ||
+                formData.paymentStructure === "multiple") && (
+                <Paper className="p-3 mb-4" elevation={3}>
+                  <Typography variant="h6">Payment Frequency</Typography>
 
-                {formData.paymentStructure === "single" && (
-                  <Box className="mt-3">
-                    <Typography variant="subtitle1">Payment Amount</Typography>
-                    <Typography variant="h6">
-                      {formData.currency}{" "}
-                      {Number(formData.projectAmount || 0).toLocaleString()}
-                    </Typography>
-                  </Box>
-                )}
-
-                {formData.paymentStructure === "recurring" && (
-                  <>
-                    <RadioGroup
-                      row
-                      value={formData.paymentFrequency}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          paymentFrequency: e.target.value,
-                        })
-                      }
-                    >
-                      <FormControlLabel
-                        value="weekly"
-                        control={<Radio />}
-                        label="Weekly"
-                      />
-                      <FormControlLabel
-                        value="monthly"
-                        control={<Radio />}
-                        label="Monthly"
-                      />
-                      <FormControlLabel
-                        value="quarterly"
-                        control={<Radio />}
-                        label="Quarterly"
-                      />
-                    </RadioGroup>
-
-                    <Box className="mt-3">
-                      <Typography variant="subtitle1">
-                        Payment Amount per installment
-                      </Typography>
-                      <Typography variant="h6">
-                        {formData.currency}{" "}
-                        {(
-                          (formData.projectAmount || 0) /
-                          (formData.contractDuration || 1)
-                        ).toLocaleString()}
-                      </Typography>
-                      <Grid container spacing={2} className="mt-2">
-                        <Grid item xs={6}>
-                          <TextField
-                            fullWidth
-                            label="Contract Duration (months)"
-                            type="number"
-                            error={!!errors.contractDuration}
-                            value={formData.contractDuration}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                contractDuration: Number(e.target.value),
-                              })
-                            }
-                          />
-                        </Grid>
-                        <Grid item xs={6}>
-                          <TextField
-                            label="Payment Start Date"
-                            name="paymentstartDate"
-                            type="date"
-                            value={formData.paymentstartDate}
-                            onChange={handleChange}
-                            InputLabelProps={{ shrink: true }}
-                            fullWidth
-                          />
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  </>
-                )}
-
-                {formData.paymentStructure === "multiple" && (
-                  <Box className="mt-3">
-                    <Typography variant="subtitle1">
-                      Milestone Payments
-                    </Typography>
-
-                    {formData.milestones?.map((milestone, index) => (
-                      <Paper
-                        key={index}
-                        className="p-3 mb-2"
-                        variant="outlined"
+                  {/* Recurring Payments */}
+                  {formData.paymentStructure === "recurring" && (
+                    <>
+                      <RadioGroup
+                        row
+                        value={formData.paymentFrequency}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            paymentFrequency: e.target.value,
+                          })
+                        }
                       >
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid item xs={4}>
-                            <TextField
-                              fullWidth
-                              label="Milestone Name"
-                              value={milestone.name}
-                              helperText={errors.milestones} // 🔹 show the message here
-                              onChange={(e) => {
-                                const updated = [...formData.milestones];
-                                updated[index].name = e.target.value;
-                                setFormData({
-                                  ...formData,
-                                  milestones: updated,
-                                });
-                              }}
-                            />
-                          </Grid>
-                          <Grid item xs={3}>
-                            <TextField
-                              fullWidth
-                              label="Amount (%)"
-                              type="number"
-                              value={milestone.percent}
-                              onChange={(e) => {
-                                const updated = [...formData.milestones];
-                                updated[index].percent = Number(e.target.value);
-                                setFormData({
-                                  ...formData,
-                                  milestones: updated,
-                                });
-                              }}
-                            />
-                          </Grid>
-                          <Grid item xs={4}>
-                            <TextField
-                              fullWidth
-                              label="Deliverable"
-                              value={milestone.deliverable}
-                              onChange={(e) => {
-                                const updated = [...formData.milestones];
-                                updated[index].deliverable = e.target.value;
-                                setFormData({
-                                  ...formData,
-                                  milestones: updated,
-                                });
-                              }}
-                            />
-                          </Grid>
-                          <Grid item xs={1}>
-                            <Button
-                              color="error"
-                              onClick={() => {
-                                const updated = [...formData.milestones];
-                                updated.splice(index, 1);
-                                setFormData({
-                                  ...formData,
-                                  milestones: updated,
-                                });
-                              }}
-                            >
-                              X
-                            </Button>
+                        <FormControlLabel
+                          value="weekly"
+                          control={<Radio />}
+                          label="Weekly"
+                        />
+                        <FormControlLabel
+                          value="monthly"
+                          control={<Radio />}
+                          label="Monthly"
+                        />
+                        <FormControlLabel
+                          value="quarterly"
+                          control={<Radio />}
+                          label="Quarterly"
+                        />
+                      </RadioGroup>
 
-                            {/* Show milestone-level error (global) */}
-                            {errors.milestones && (
-                              <Typography color="error" variant="caption">
-                                {errors.milestones}
-                              </Typography>
-                            )}
-                          </Grid>
-                        </Grid>
-                      </Paper>
-                    ))}
-
-                    {/* Add Milestone button - disabled when 100% allocated */}
-                    <Button
-                      variant="outlined"
-                      disabled={
-                        (formData.milestones || []).reduce(
-                          (sum, m) => sum + (m.percent || 0),
-                          0
-                        ) >= 100
-                      }
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          milestones: [
-                            ...(formData.milestones || []),
-                            { name: "", percent: 0, deliverable: "" },
-                          ],
-                        })
-                      }
-                    >
-                      + Add Milestone
-                    </Button>
-
-                    <TextField
-                      label="Payment Start Date"
-                      name="paymentstartDate"
-                      type="date"
-                      value={formData.paymentstartDate}
-                      onChange={handleChange}
-                      InputLabelProps={{ shrink: true }}
-                      className="mx-2"
-                    />
-
-                    {/* Total Allocated */}
-                    <Typography
-                      variant="body2"
-                      sx={{ mt: 2 }}
-                      color={
-                        (formData.milestones || []).reduce(
-                          (sum, m) => sum + (m.percent || 0),
-                          0
-                        ) === 100
-                          ? "success.main"
-                          : "error.main"
-                      }
-                    >
-                      Total allocated:{" "}
-                      {(formData.milestones || []).reduce(
-                        (sum, m) => sum + (m.percent || 0),
-                        0
-                      )}
-                      %
-                    </Typography>
-                  </Box>
-                )}
-              </Paper>
-
-              {/* Payment Schedule */}
-              <Paper className="p-3 mb-4" elevation={3}>
-                <Typography variant="h6">Payment Schedule Preview</Typography>
-
-                {/* Single Payment */}
-                {formData.paymentStructure === "single" && (
-                  <Typography>
-                    Payment — {formData.currency}{" "}
-                    {Number(formData.projectAmount || 0).toLocaleString()}
-                  </Typography>
-                )}
-
-                {/* Recurring Payments */}
-                {formData.paymentStructure === "recurring" && (
-                  <>
-                    {Array.from(
-                      { length: formData.contractDuration || 0 },
-                      (_, i) => (
-                        <Typography key={i}>
-                          Payment {i + 1} — {formData.currency}{" "}
+                      <Box className="mt-3">
+                        <Typography variant="subtitle1">
+                          Payment Amount per installment
+                        </Typography>
+                        <Typography variant="h6">
+                          {formData.currency}{" "}
                           {(
                             (formData.projectAmount || 0) /
                             (formData.contractDuration || 1)
                           ).toLocaleString()}
                         </Typography>
-                      )
-                    )}
-                    {formData.contractDuration > 4 && (
-                      <Typography color="text.secondary">
-                        + more payments
-                      </Typography>
-                    )}
-                  </>
-                )}
+                        <Grid container spacing={2} className="mt-2">
+                          <Grid item xs={6}>
+                            <TextField
+                              fullWidth
+                              label="Contract Duration (months)"
+                              type="number"
+                              error={!!errors.contractDuration}
+                              value={formData.contractDuration}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  contractDuration: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </Grid>
+                          <Grid item xs={6}>
+                            <TextField
+                              label="Payment Start Date"
+                              name="paymentstartDate"
+                              type="date"
+                              value={formData.paymentstartDate}
+                              onChange={handleChange}
+                              InputLabelProps={{ shrink: true }}
+                              fullWidth
+                            />
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    </>
+                  )}
 
-                {/* Multiple (Milestones) */}
-                {formData.paymentStructure === "multiple" && (
-                  <>
-                    {formData.milestones?.map((m, i) => (
-                      <Typography key={i}>
-                        {m.name || `Milestone ${i + 1}`} — {m.percent || 0}% (
-                        {formData.currency}{" "}
-                        {(
-                          ((m.percent || 0) / 100) *
-                          (formData.projectAmount || 0)
-                        ).toLocaleString()}
-                        )
+                  {/* Multiple / Milestones */}
+                  {formData.paymentStructure === "multiple" && (
+                    <Box className="mt-3">
+                      <Typography variant="subtitle1">
+                        Milestone Payments
                       </Typography>
-                    ))}
 
-                    {/* Validation for milestone allocation */}
-                    <Typography
-                      color={
-                        (formData.milestones || []).reduce(
+                      {formData.milestones?.map((milestone, index) => (
+                        <Paper
+                          key={index}
+                          className="p-3 mb-2"
+                          variant="outlined"
+                        >
+                          <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={4}>
+                              <TextField
+                                fullWidth
+                                label="Milestone Name"
+                                value={milestone.name}
+                                helperText={errors.milestones}
+                                onChange={(e) => {
+                                  const updated = [...formData.milestones];
+                                  updated[index].name = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    milestones: updated,
+                                  });
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={3}>
+                              <TextField
+                                fullWidth
+                                label="Amount (%)"
+                                type="number"
+                                value={milestone.percent}
+                                onChange={(e) => {
+                                  const updated = [...formData.milestones];
+                                  updated[index].percent = Number(
+                                    e.target.value
+                                  );
+                                  setFormData({
+                                    ...formData,
+                                    milestones: updated,
+                                  });
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={4}>
+                              <TextField
+                                fullWidth
+                                label="Deliverable"
+                                value={milestone.deliverable}
+                                onChange={(e) => {
+                                  const updated = [...formData.milestones];
+                                  updated[index].deliverable = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    milestones: updated,
+                                  });
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={1}>
+                              <Button
+                                color="error"
+                                onClick={() => {
+                                  const updated = [...formData.milestones];
+                                  updated.splice(index, 1);
+                                  setFormData({
+                                    ...formData,
+                                    milestones: updated,
+                                  });
+                                }}
+                              >
+                                X
+                              </Button>
+                            </Grid>
+                          </Grid>
+                        </Paper>
+                      ))}
+
+                      <Button
+                        variant="outlined"
+                        disabled={
+                          (formData.milestones || []).reduce(
+                            (sum, m) => sum + (m.percent || 0),
+                            0
+                          ) >= 100
+                        }
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            milestones: [
+                              ...(formData.milestones || []),
+                              { name: "", percent: 0, deliverable: "" },
+                            ],
+                          })
+                        }
+                      >
+                        + Add Milestone
+                      </Button>
+
+                      <TextField
+                        label="Payment Start Date"
+                        name="paymentstartDate"
+                        type="date"
+                        value={formData.paymentstartDate}
+                        onChange={handleChange}
+                        InputLabelProps={{ shrink: true }}
+                        className="mx-2"
+                      />
+
+                      <Typography
+                        variant="body2"
+                        sx={{ mt: 2 }}
+                        color={
+                          (formData.milestones || []).reduce(
+                            (sum, m) => sum + (m.percent || 0),
+                            0
+                          ) === 100
+                            ? "success.main"
+                            : "error.main"
+                        }
+                      >
+                        Total allocated:{" "}
+                        {(formData.milestones || []).reduce(
                           (sum, m) => sum + (m.percent || 0),
                           0
-                        ) === 100
-                          ? "success.main"
-                          : "error.main"
-                      }
-                    >
-                      Total allocated:{" "}
-                      {(formData.milestones || []).reduce(
-                        (sum, m) => sum + (m.percent || 0),
-                        0
-                      )}
-                      %
-                    </Typography>
-                  </>
-                )}
-              </Paper>
+                        )}
+                        %
+                      </Typography>
+                    </Box>
+                  )}
+                </Paper>
+              )}
 
-              {/* Financing */}
+              {/* 💳 Financing */}
               <Paper className="p-3 mb-4" elevation={3}>
                 <Typography variant="h6">Financing</Typography>
                 <RadioGroup
@@ -1101,7 +1100,7 @@ const MultiStepProjectForm = () => {
                 </RadioGroup>
               </Paper>
 
-              {/* Payment Method */}
+              {/* 💰 Payment Method */}
               <Paper className="p-3 mb-4" elevation={3}>
                 <Typography variant="h6">Payment Method</Typography>
                 <FormControl fullWidth>
@@ -1116,7 +1115,8 @@ const MultiStepProjectForm = () => {
                     }
                   >
                     <MenuItem value="bank">Bank Transfer</MenuItem>
-                    <MenuItem value="card">Credit/Debit Card</MenuItem>
+                    <MenuItem value="wallet">Wallet Transfer</MenuItem>
+                    <MenuItem value="raast">Raast</MenuItem>
                     <MenuItem value="cash">Cash</MenuItem>
                   </Select>
                 </FormControl>
@@ -1124,6 +1124,7 @@ const MultiStepProjectForm = () => {
             </Box>
           </Row>
         );
+
       case 3:
         if (formData.financing === "yes") {
           return (

@@ -127,7 +127,13 @@ const BottomNav = () => {
 
           {/* Submenu list */}
           <List>
-            <ListItem button onClick={() => navigate("/projects/new")}>
+            <ListItem
+              button
+              onClick={() => {
+                navigate("/projects/new");
+                setIsSubMenuOpen(false); // ✅ close popup after selecting
+              }}
+            >
               <ListItemIcon>
                 <FolderOpenIcon color="primary" />
               </ListItemIcon>
@@ -137,7 +143,13 @@ const BottomNav = () => {
               />
             </ListItem>
 
-            <ListItem button onClick={() => navigate("/new-transaction")}>
+            <ListItem
+              button
+              onClick={() => {
+                navigate("/new-transaction");
+                setIsSubMenuOpen(false); // ✅ close popup after selecting
+              }}
+            >
               <ListItemIcon>
                 <SwapVertIcon color="success" />
               </ListItemIcon>
@@ -147,7 +159,13 @@ const BottomNav = () => {
               />
             </ListItem>
 
-            <ListItem button onClick={() => navigate("/new-payment-link")}>
+            <ListItem
+              button
+              onClick={() => {
+                navigate("/new-payment-link");
+                setIsSubMenuOpen(false); // ✅ close popup after selecting
+              }}
+            >
               <ListItemIcon>
                 <LinkIcon color="secondary" />
               </ListItemIcon>
@@ -157,7 +175,13 @@ const BottomNav = () => {
               />
             </ListItem>
 
-            <ListItem button onClick={() => navigate("/invoices/new")}>
+            <ListItem
+              button
+              onClick={() => {
+                navigate("/invoices/new");
+                setIsSubMenuOpen(false); // ✅ close popup after selecting
+              }}
+            >
               <ListItemIcon>
                 <ReceiptIcon color="warning" />
               </ListItemIcon>

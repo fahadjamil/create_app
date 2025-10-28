@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import logo from "../../assets/img/create-logo.png";
@@ -69,8 +69,19 @@ const Auth = ({ onLoginSuccess }) => {
 
   const nextStep = () => setSignupStep((prev) => prev + 1);
   const prevStep = () => setSignupStep((prev) => prev - 1);
-  const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
-
+  const [otpTimer, setOtpTimer] = useState(60);
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const timer = setInterval(() => setOtpTimer((prev) => prev - 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [otpTimer]);
+  const generateOTP = () => {
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(otpCode);
+    setOtpTimer(60); // Reset 60s countdown each time OTP is generated
+    return otpCode;
+  };
   const navigate = useNavigate();
   const baseURL = process.env.REACT_APP_BASE_URL;
 
@@ -86,6 +97,7 @@ const Auth = ({ onLoginSuccess }) => {
   ];
 
   const sendSMS = async (otpToSend) => {
+    console.log("OTP" + otpToSend);
     if (phone) {
       try {
         const response = await axios.post(
@@ -154,14 +166,20 @@ const Auth = ({ onLoginSuccess }) => {
       phone,
       firstName,
       lastName,
-      email: usernameOrEmail,
+      email: usernameOrEmail, // ensure this is an email
       password,
       role,
       searchTerm,
     };
 
+    console.log("Signup payload:", Dataset);
+
     try {
-      await axios.post(`${baseURL}/user/signup`, Dataset);
+      await axios.post(`${baseURL}/user/signup`, Dataset, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       setAlertMessage("OTP sent successfully!");
 
@@ -177,7 +195,6 @@ const Auth = ({ onLoginSuccess }) => {
     } catch (error) {
       let errMsg = "❌ Signup failed. Please try again.";
 
-      // Specific error handling
       if (
         error.response?.data?.message ===
         "User with this email or phone number already exists."
@@ -442,12 +459,11 @@ const Auth = ({ onLoginSuccess }) => {
                   <Box
                     sx={{
                       p: 3,
-                      textAlign: "left", // left alignment like your phone UI
+                      textAlign: "left",
                     }}
                   >
                     {/* OTP Icon */}
                     <Box mb={3}>
-                      {/* Replace with actual image or SVG */}
                       <img
                         src={GoogleHome}
                         alt="Wallet Illustration"
@@ -499,6 +515,17 @@ const Auth = ({ onLoginSuccess }) => {
                           return;
                         }
 
+                        // ❌ If OTP is expired
+                        if (otpTimer === 0) {
+                          setAlertMessage(
+                            "OTP has expired. Please resend the code."
+                          );
+                          setAlertType("error");
+                          setShowAlert(true);
+                          return;
+                        }
+
+                        // ❌ If incorrect OTP
                         if (otp !== generatedOtp) {
                           setAlertMessage("Invalid OTP. Please try again.");
                           setAlertType("error");
@@ -506,10 +533,11 @@ const Auth = ({ onLoginSuccess }) => {
                           return;
                         }
 
+                        // ✅ If correct & within time
                         setAlertMessage("OTP verified successfully!");
                         setAlertType("success");
                         setShowAlert(true);
-                        nextStep(); // Proceed to next step (e.g., user details)
+                        nextStep(); // proceed to next screen
                       }}
                       fullWidth
                       variant="contained"
@@ -524,27 +552,67 @@ const Auth = ({ onLoginSuccess }) => {
                     >
                       Verify
                     </Button>
-                    {/* <Button
-                      onClick={async () => {
-                        const otpCode = generateOTP();
-                        setGeneratedOtp(otpCode);
 
-                        try {
-                          await sendSMS(otpCode);
-                          setAlertMessage("OTP resent successfully!");
-                          setAlertType("success");
-                          setShowAlert(true);
-                        } catch (error) {
-                          setAlertMessage("Failed to resend OTP.");
-                          setAlertType("error");
-                          setShowAlert(true);
-                        }
-                      }}
-                      variant="text"
-                      sx={{ mt: 1, textTransform: "none", fontSize: "14px" }}
-                    >
-                      Resend Code
-                    </Button> */}
+                    {/* OTP Expiry + Resend */}
+                    <Box textAlign="center" mt={2}>
+                      {otpTimer > 0 ? (
+                        <Typography variant="body2" color="text.secondary">
+                          ⏳ OTP will expire in <strong>{otpTimer}s</strong>
+                        </Typography>
+                      ) : (
+                        <>
+                          <Typography
+                            variant="body2"
+                            color="error"
+                            sx={{ mb: 1 }}
+                          >
+                            ❌ Your OTP has expired.
+                          </Typography>
+                          <Button
+                            onClick={async () => {
+                              const otpCode = generateOTP();
+                              setGeneratedOtp(otpCode);
+
+                              try {
+                                await sendSMS(otpCode);
+                                setAlertMessage("OTP resent successfully!");
+                                setAlertType("success");
+                                setShowAlert(true);
+                                setOtpTimer(60); // restart timer
+                              } catch (error) {
+                                setAlertMessage(
+                                  "Failed to resend OTP. Please try again."
+                                );
+                                setAlertType("error");
+                                setShowAlert(true);
+                              }
+                            }}
+                            variant="text"
+                            sx={{
+                              textTransform: "none",
+                              fontSize: "15px",
+                              color: "#0a1a33",
+                              position: "relative",
+                              "&::after": {
+                                content: '""',
+                                position: "absolute",
+                                width: "0%",
+                                height: "2px",
+                                bottom: 0,
+                                left: 0,
+                                bgcolor: "#0a1a33",
+                                transition: "width 0.3s ease",
+                              },
+                              "&:hover::after": {
+                                width: "100%",
+                              },
+                            }}
+                          >
+                            🔄 Resend Code
+                          </Button>
+                        </>
+                      )}
+                    </Box>
                   </Box>
                 )}
 
@@ -1309,34 +1377,85 @@ const Auth = ({ onLoginSuccess }) => {
         ) : (
           // 🔹 Forgot Password
           <form onSubmit={handleForgotPassword}>
-            <Typography variant="h6" align="center" gutterBottom>
-              Reset Password
-            </Typography>
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Email"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              required
-            />
-            <CardActions>
-              <Button
-                onClick={() => setIsResetting(false)}
+            <Box
+              sx={{
+                maxWidth: 400,
+                mx: "auto",
+                p: 4,
+                borderRadius: 3,
+                boxShadow: 3,
+                bgcolor: "background.paper",
+                textAlign: "center",
+                animation: "fadeIn 0.4s ease",
+                "@keyframes fadeIn": {
+                  from: { opacity: 0, transform: "translateY(10px)" },
+                  to: { opacity: 1, transform: "translateY(0)" },
+                },
+              }}
+            >
+              {/* Heading */}
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                gutterBottom
+                color="primary"
+              >
+                🔒 Reset Your Password
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Enter your registered email address to receive a password reset
+                link.
+              </Typography>
+
+              {/* Email Field */}
+              <TextField
+                fullWidth
+                label="Email Address"
+                type="email"
                 variant="outlined"
-                fullWidth
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                disabled={loading}
-              >
-                {loading ? "Sending..." : "Reset Password"}
-              </Button>
-            </CardActions>
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+                sx={{
+                  mb: 3,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "10px",
+                  },
+                }}
+              />
+
+              {/* Buttons */}
+              <Stack spacing={2}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={loading}
+                  sx={{
+                    borderRadius: "10px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    bgcolor: "#0a1a33",
+                    "&:hover": { bgcolor: "#142850" },
+                  }}
+                >
+                  {loading ? "Sending..." : "Reset Password"}
+                </Button>
+                <Button
+                  onClick={() => setIsResetting(false)}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    borderRadius: "10px",
+                    textTransform: "none",
+                    fontWeight: 500,
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Box>
           </form>
         )}
       </Card>

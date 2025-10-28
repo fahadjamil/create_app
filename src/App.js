@@ -8,7 +8,7 @@ import EditProject from "./components/project/editProject";
 import ProjectList from "./components/project/projectList";
 import DraftProject from "./components/project/draftProjectForm";
 import NewInvoice from "./components/Invoice/newInvoice";
-import ClientDetails from "./components/client/clientDetails";
+import ClientTab  from "./components/client/clientDetails";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(
@@ -126,7 +126,7 @@ export default function App() {
         element={
           isAuthenticated ? (
             <Layout onLogout={handleLogout}>
-              <ClientDetails />
+              <ClientTab  />
             </Layout>
           ) : (
             <Navigate to="/login" replace />

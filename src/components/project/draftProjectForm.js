@@ -475,15 +475,35 @@ const MultiStepDraftProjectForm = () => {
               />
             </Col>
             <Col md={6}>
-              <div className="d-flex flex-wrap gap-2">
+              <div className="d-flex flex-wrap gap-2 align-items-center">
                 {formData.tags.map((tag, idx) => (
                   <span
                     key={idx}
                     className="badge bg-primary d-flex align-items-center"
+                    style={{ gap: "6px", padding: "8px" }}
                   >
                     {tag}
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="p-0 ms-2 text-white"
+                      onClick={() => {
+                        const updatedTags = formData.tags.filter(
+                          (_, i) => i !== idx
+                        );
+                        setFormData({ ...formData, tags: updatedTags });
+                      }}
+                      style={{
+                        lineHeight: 1,
+                        fontSize: "14px",
+                        textDecoration: "none",
+                      }}
+                    >
+                      ✕
+                    </Button>
                   </span>
                 ))}
+
                 <Button
                   variant="outlined"
                   onClick={() => setShowTagModal(true)}
@@ -492,6 +512,7 @@ const MultiStepDraftProjectForm = () => {
                 </Button>
               </div>
             </Col>
+
             <Col md={6}>
               <TextField
                 label="Project Description"

@@ -184,79 +184,78 @@ export default function CreateInvoice() {
   };
 
   const handleDownloadPDF = async () => {
-  if (clientType === "custom") {
-    // 1. Validate form first
-    if (!validateForm()) {
-      alert("⚠️ Please fix validation errors before proceeding.");
-      return;
-    }
-
-    // 2. Prepare dataset
-    const dataset = {
-      fullName: form.clientName.trim(),
-      clientType: form.clientType,
-      company: form.company?.trim() || "",
-      email: form.clientEmail.trim(),
-      phone: form.phone.trim(),
-      address: form.address?.trim() || "",
-    };
-
-    try {
-      setLoading(true);
-      // 3. Call API
-      const res = await axios.post(
-        "http://localhost:8080/api/clients",
-        dataset
-      );
-
-      console.log("✅ Client created:", res.data);
-
-      // 4. Proceed with PDF generation only after success
-      const element = printRef.current;
-      if (!element) {
-        alert("⚠️ Nothing to export!");
+    if (clientType === "custom") {
+      // 1. Validate form first
+      if (!validateForm()) {
+        alert("⚠️ Please fix validation errors before proceeding.");
         return;
       }
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
+      // 2. Prepare dataset
+      const dataset = {
+        fullName: form.clientName.trim(),
+        clientType: form.clientType,
+        company: form.company?.trim() || "",
+        email: form.clientEmail.trim(),
+        phone: form.phone.trim(),
+        address: form.address?.trim() || "",
+      };
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      try {
+        setLoading(true);
+        // 3. Call API
+        const res = await axios.post(
+          "http://localhost:8080/api/clients",
+          dataset
+        );
 
-      let position = 0;
-      let heightLeft = pdfHeight;
+        console.log("✅ Client created:", res.data);
 
-      while (heightLeft > 0) {
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-        if (heightLeft > 0) {
-          pdf.addPage();
-          position = -pdf.internal.pageSize.getHeight();
+        // 4. Proceed with PDF generation only after success
+        const element = printRef.current;
+        if (!element) {
+          alert("⚠️ Nothing to export!");
+          return;
         }
-      }
 
-      pdf.save("invoice.pdf");
-      alert("✅ Invoice PDF downloaded!");
-    } catch (err) {
-      if (err.response) {
-        console.error("❌ API Error:", err.response.data.message);
-        alert(err.response.data.message); // e.g. duplicate phone/email
-      } else {
-        console.error("❌ Network Error:", err.message);
-        alert("Network error, please try again.");
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        let position = 0;
+        let heightLeft = pdfHeight;
+
+        while (heightLeft > 0) {
+          pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+          heightLeft -= pdf.internal.pageSize.getHeight();
+          if (heightLeft > 0) {
+            pdf.addPage();
+            position = -pdf.internal.pageSize.getHeight();
+          }
+        }
+
+        pdf.save("invoice.pdf");
+        alert("✅ Invoice PDF downloaded!");
+      } catch (err) {
+        if (err.response) {
+          console.error("❌ API Error:", err.response.data.message);
+          alert(err.response.data.message); // e.g. duplicate phone/email
+        } else {
+          console.error("❌ Network Error:", err.message);
+          alert("Network error, please try again.");
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
-  }
-};
-
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -566,8 +565,8 @@ export default function CreateInvoice() {
                       }
 
                       setSelectedProject(selected);
-                      setSelectedMilestones([]); // reset milestones
-                      setCalculatedAmount(Number(selected.projectAmount)); // reset to base
+                      setSelectedMilestones([]);
+                      setCalculatedAmount(Number(selected.projectAmount));
 
                       setForm((prev) => ({
                         ...prev,
@@ -582,13 +581,80 @@ export default function CreateInvoice() {
                         address: "",
                       }));
                     }}
+                    renderValue={(value) => {
+                      const selected = applications.find(
+                        (p) => p.pid === value
+                      );
+                      if (!selected) return "Choose a project";
+
+                      let structureLabel = "No structure";
+
+                      const ps = selected.paymentStructure;
+                      if (ps) {
+                        if (typeof ps === "string") {
+                          const type = ps.toLowerCase();
+                          structureLabel =
+                            type === "recurring"
+                              ? "Recurring Payment"
+                              : type === "multiple"
+                              ? "Multiple Payment"
+                              : "Single Payment";
+                        } else if (Array.isArray(ps)) {
+                          structureLabel =
+                            ps.length > 1
+                              ? "Multiple Payment"
+                              : "Single Payment";
+                        } else if (typeof ps === "object") {
+                          const type = ps.type?.toLowerCase() || "";
+                          structureLabel =
+                            type === "recurring"
+                              ? "Recurring Payment"
+                              : type === "multiple"
+                              ? "Multiple Payment"
+                              : "Single Payment";
+                        }
+                      }
+
+                      return `${selected.projectName} – ${structureLabel}`;
+                    }}
                   >
                     <MenuItem value="">Choose a project</MenuItem>
-                    {applications.map((app) => (
-                      <MenuItem key={app.pid} value={app.pid}>
-                        {app.projectName}
-                      </MenuItem>
-                    ))}
+
+                    {applications.map((app) => {
+                      let structureLabel = "No structure";
+                      const ps = app.paymentStructure;
+
+                      if (ps) {
+                        if (typeof ps === "string") {
+                          const type = ps.toLowerCase();
+                          structureLabel =
+                            type === "recurring"
+                              ? "Recurring Payment"
+                              : type === "multiple"
+                              ? "Multiple Payment"
+                              : "Single Payment";
+                        } else if (Array.isArray(ps)) {
+                          structureLabel =
+                            ps.length > 1
+                              ? "Multiple Payment"
+                              : "Single Payment";
+                        } else if (typeof ps === "object") {
+                          const type = ps.type?.toLowerCase() || "";
+                          structureLabel =
+                            type === "recurring"
+                              ? "Recurring Payment"
+                              : type === "multiple"
+                              ? "Multiple Payment"
+                              : "Single Payment";
+                        }
+                      }
+
+                      return (
+                        <MenuItem key={app.pid} value={app.pid}>
+                          {app.projectName} – {structureLabel}
+                        </MenuItem>
+                      );
+                    })}
                   </Select>
                 </FormControl>
 
@@ -619,91 +685,140 @@ export default function CreateInvoice() {
                   )}
                   {selectedProject?.paymentStructure === "multiple" &&
                     selectedProject.milestones?.length > 0 && (
-                      <FormControl fullWidth sx={{ mb: 3 }}>
-                        <InputLabel>Milestones</InputLabel>
-                        <Select
-                          multiple
-                          value={selectedMilestones}
-                          onChange={(e) => {
-                            const selected = e.target.value;
-                            setSelectedMilestones(selected);
+                      <div className="mb-3">
+                        <strong>Milestones</strong>
+                        <hr className="w-100 my-2 border-2 border-secondary opacity-50" />
+                        <div className="d-flex flex-wrap gap-2 mt-2">
+                          {selectedProject.milestones.map((m) => {
+                            const checked = selectedMilestones.includes(m.name);
+                            return (
+                              <div
+                                key={m.name}
+                                className={`px-3 py-2 border rounded-4 d-flex align-items-center ${
+                                  checked
+                                    ? "border-primary bg-light shadow-sm"
+                                    : "border-secondary"
+                                }`}
+                                style={{
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease-in-out",
+                                  minWidth: "fit-content",
+                                }}
+                                onClick={() => {
+                                  const updated = checked
+                                    ? selectedMilestones.filter(
+                                        (n) => n !== m.name
+                                      )
+                                    : [...selectedMilestones, m.name];
 
-                            // Calculate total based on milestone percent
-                            const total = selected.reduce(
-                              (sum, milestoneName) => {
-                                const milestone =
-                                  selectedProject.milestones.find(
-                                    (m) => m.name === milestoneName
+                                  setSelectedMilestones(updated);
+
+                                  const total = updated.reduce(
+                                    (sum, milestoneName) => {
+                                      const milestone =
+                                        selectedProject.milestones.find(
+                                          (x) => x.name === milestoneName
+                                        );
+                                      if (!milestone) return sum;
+                                      return (
+                                        sum +
+                                        Number(selectedProject.projectAmount) *
+                                          (milestone.percent / 100)
+                                      );
+                                    },
+                                    0
                                   );
-                                if (!milestone) return sum;
-                                return (
-                                  sum +
-                                  Number(selectedProject.projectAmount) *
-                                    (milestone.percent / 100)
-                                );
-                              },
-                              0
-                            );
 
-                            setCalculatedAmount(total.toFixed(2));
-                            setForm((prev) => ({
-                              ...prev,
-                              amount: total.toFixed(2),
-                            }));
-                          }}
-                          renderValue={(selected) => selected.join(", ")}
-                        >
-                          {selectedProject.milestones.map((m) => (
-                            <MenuItem key={m.name} value={m.name}>
-                              <Checkbox
-                                checked={selectedMilestones.includes(m.name)}
-                              />
-                              <ListItemText
-                                primary={`${m.name} (${m.percent}%)`}
-                              />
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+                                  setCalculatedAmount(total.toFixed(2));
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    amount: total.toFixed(2),
+                                  }));
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  readOnly
+                                  className="form-check-input me-2"
+                                  style={{ width: "18px", height: "18px" }}
+                                />
+                                <div className="d-flex flex-column">
+                                  <span className="fw-semibold">{m.name}</span>
+                                  <small className="text-muted">
+                                    {m.percent}%
+                                  </small>
+                                  {m.deliverable && (
+                                    <small className="text-secondary fst-italic">
+                                      Deliverable: {m.deliverable}
+                                    </small>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     )}
+
                   {selectedProject?.paymentStructure === "recurring" &&
                     recurringOptions.length > 0 && (
-                      <FormControl fullWidth sx={{ mb: 3 }}>
-                        <InputLabel>Select Months</InputLabel>
-                        <Select
-                          multiple
-                          value={selectedMilestones}
-                          onChange={(e) => {
-                            const selected = e.target.value;
-                            setSelectedMilestones(selected);
+                      <div className="mb-3">
+                        <strong>Select Payment</strong>
+                        <div className="d-flex flex-wrap gap-2 mt-2">
+                          {recurringOptions.map((m) => {
+                            const checked = selectedMilestones.includes(m.name);
+                            return (
+                              <div
+                                key={m.value}
+                                className={`px-3 py-2 border rounded-4 d-flex align-items-center ${
+                                  checked
+                                    ? "border-success bg-light shadow-sm"
+                                    : "border-secondary"
+                                }`}
+                                style={{
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease-in-out",
+                                  minWidth: "fit-content",
+                                }}
+                                onClick={() => {
+                                  const updated = checked
+                                    ? selectedMilestones.filter(
+                                        (n) => n !== m.name
+                                      )
+                                    : [...selectedMilestones, m.name];
 
-                            // Calculate recurring amount
-                            const monthlyAmount =
-                              Number(selectedProject.projectAmount) /
-                              Number(selectedProject.contractDuration || 1);
+                                  setSelectedMilestones(updated);
 
-                            const total = monthlyAmount * selected.length;
+                                  const monthlyAmount =
+                                    Number(selectedProject.projectAmount) /
+                                    Number(
+                                      selectedProject.contractDuration || 1
+                                    );
+                                  const total = monthlyAmount * updated.length;
 
-                            setCalculatedAmount(total.toFixed(2));
-                            setForm((prev) => ({
-                              ...prev,
-                              amount: total.toFixed(2),
-                            }));
-                          }}
-                          renderValue={(selected) => selected.join(", ")}
-                        >
-                          {recurringOptions.map((m) => (
-                            <MenuItem key={m.value} value={m.name}>
-                              <Checkbox
-                                checked={selectedMilestones.includes(m.name)}
-                              />
-                              <ListItemText primary={m.name} />
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+                                  setCalculatedAmount(total.toFixed(2));
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    amount: total.toFixed(2),
+                                  }));
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  readOnly
+                                  className="form-check-input me-2"
+                                  style={{ width: "18px", height: "18px" }}
+                                />
+                                <span className="fw-semibold">{m.name}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     )}
-
+                  <hr className="w-100 my-3 border-2 border-secondary opacity-50" />
                   <Grid item xs={6}>
                     <FormControl fullWidth>
                       <InputLabel>Currency *</InputLabel>
